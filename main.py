@@ -145,13 +145,11 @@ def calcular_rouge_score(resposta_anterior, nova_resposta):
     scores = scorer.score(resposta_anterior, nova_resposta)
     return scores['rougeL'].fmeasure
 
-def gerar_dica(resposta_anterior):
+def gerar_dica(prompt):
     """
     Gera uma dica progressiva com base na resposta anterior.
     """
-    prompt_dica = f"""The previous answer was: {resposta_anterior}. Based on this, what would be a good tip to improve or expand the answer that you can add to the previous prompt?
-
-?"""
+    prompt_dica = f"""The previous security incident categorization prompt was: {prompt}. Based on this, what would be a good small tip to improve the resulting response?"""
     return enviar_prompt_para_llm(prompt_dica)
 
 
@@ -225,7 +223,7 @@ def progressive_hints(prompt, row, colunas, max_hints=1, limite_rouge=0.9):
 
     for i in range(max_hints):
         # Gera uma dica com base na resposta anterior
-        dica = gerar_dica(resposta_anterior)
+        dica = gerar_dica(prompt)
         prompt = f"{dica} {prompt}"  # Adiciona a dica ao prompt
         nova_resposta = enviar_prompt_para_llm(prompt)
 
