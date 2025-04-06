@@ -105,17 +105,18 @@ def enviar_prompt_para_local(prompt):
     """
     Envia um prompt para um LLM local (Hugging Face) e retorna a resposta.
     """
-    global local_model
+    global local_model, tokenizer
     try:
-                 
-        tokenizer = AutoTokenizer.from_pretrained(modelo)
+        if(local_model is None):
+            
+            tokenizer = AutoTokenizer.from_pretrained(modelo)
                 
-        model = AutoModelForCausalLM.from_pretrained(modelo)
+            local_model = AutoModelForCausalLM.from_pretrained(modelo)
                 
         messages=[{"role": "user", "content": prompt}]
         formatted_prompt = tokenizer.apply_chat_template(messages, tokenize=False)
 
-        pipe = pipeline("text-generation", model= model, tokenizer = tokenizer, max_new_tokens=250)
+        pipe = pipeline("text-generation", model= local_model, tokenizer = tokenizer, max_new_tokens=250,pad_token_id=tokenizer.eos_token_id)
                 #print(pipe(formatted_prompt)[0]["generated_text"])
         raw_output = pipe(formatted_prompt)[0]["generated_text"]
         #        result = extract_assistant_response(raw_output, local_prompt)
@@ -192,7 +193,7 @@ def extrair_security_incidents(texto):
     else:
         return {"Category": "UNKNOWN", "Explanation": "UNKNOWN"}
 
-def progressive_hints(prompt, row, colunas, max_hints=1, limite_rouge=0.9):
+def progressive_hints(prompt, row, colunas, max_hints=4, limite_rouge=0.9):
     """
     Implementa a funcionalidade de progressive hints.
     Gera dicas progressivas usando o próprio LLM com base na resposta anterior.
