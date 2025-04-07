@@ -212,17 +212,18 @@ def progressive_hints(prompt, row, colunas, max_hints=4, limite_rouge=0.9):
 
     # Inicializa as variáveis para evitar erros
     nova_resposta = resposta
-    rouge_score = 0.0
-
+    hint_count = 0
+    hint = {}
+    hint[hint_count] = extrair_security_incidents(nova_resposta).get("Category", "UNKNOWN")
     if max_hints == 0:
+       
         resultados.append({
-            
             "informacoes_das_colunas": informacoes_das_colunas,
-            **extrair_security_incidents(nova_resposta),
-            "rouge": rouge_score
+            **hint
+            
         })
         return resultados
-
+    
     for i in range(max_hints):
         # Gera uma dica com base na resposta anterior
         dica = gerar_dica(prompt)
@@ -230,23 +231,22 @@ def progressive_hints(prompt, row, colunas, max_hints=4, limite_rouge=0.9):
         nova_resposta = enviar_prompt_para_llm(prompt)
 
         # Calcula o ROUGE Score entre a resposta anterior e a nova resposta
-        rouge_score = calcular_rouge_score(resposta_anterior, nova_resposta)
-        
-       
+        #rouge_score = calcular_rouge_score(extrair_security_incidents(resposta_anterior).get("Category", "UNKNOWN"), extrair_security_incidents(nova_resposta).get("Category", "UNKNOWN"))
+          # Contador de dicas
+        hint_count = i + 1
+        hint[hint_count] = extrair_security_incidents(nova_resposta).get("Category", "UNKNOWN")
 
         # Interrompe se atingir o limite de ROUGE ou o número máximo de dicas
-        if (i + 1) == max_hints or rouge_score >= limite_rouge:
              # Salva os resultados na lista
-            resultados.append({
-                "informacoes_das_colunas": informacoes_das_colunas,
-                **extrair_security_incidents(nova_resposta),
-                "rouge": rouge_score
-            })
-            break
-
+       
         # Atualiza a resposta anterior para a nova resposta
         resposta_anterior = nova_resposta
 
+    resultados.append({
+            "informacoes_das_colunas": informacoes_das_colunas,
+            **hint
+        })
+   
     return resultados
 
 
