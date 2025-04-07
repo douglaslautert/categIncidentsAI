@@ -116,11 +116,11 @@ def enviar_prompt_para_local(prompt):
                     config_args[key.strip()] = eval(value.strip())  # Converte strings como "True" para booleanos
 
             # Carrega o modelo e o tokenizer do DeepSeek-R1 com os argumentos processados
-            tokenizer = AutoTokenizer.from_pretrained(modelo, **config_args)
-            local_model = AutoModelForCausalLM.from_pretrained(modelo, **config_args)
+            tokenizer = AutoTokenizer.from_pretrained(modelo)
+            local_model = AutoModelForCausalLM.from_pretrained(modelo)
         messages = [{"role": "user", "content": prompt}]
         # Usa o pipeline para geração de texto
-        pipe = pipeline("text-generation", model=local_model, tokenizer=tokenizer, max_new_tokens=250, device=-1)
+        pipe = pipeline("text-generation", model=local_model, tokenizer=tokenizer, max_new_tokens=250)
         response = pipe(messages)[0]["generated_text"]
 
         return response
@@ -230,7 +230,7 @@ def progressive_hints(prompt, row, colunas, max_hints=4, limite_rouge=0.9):
         nova_resposta = enviar_prompt_para_llm(prompt)
 
         # Calcula o ROUGE Score entre a resposta anterior e a nova resposta
-        rouge_score = calcular_rouge_score(extrair_security_incidents(resposta_anterior).get("Category", "UNKNOWN"), extrair_security_incidents(nova_resposta).get("Category", "UNKNOWN"))
+        rouge_score = calcular_rouge_score(resposta_anterior, nova_resposta)
         
        
 
