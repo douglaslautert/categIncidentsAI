@@ -26,4 +26,4 @@ USER appuser
 ENV NAME procressiveHI
 
 # Run main.py when the container launches
-CMD ["python", "src/main.py"]
+CMD ["python", "main.py"]
