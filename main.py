@@ -16,7 +16,7 @@ uri = None  # URI opcional
 use_local_llm = False  # Define se usará LLM local ou API
 local_model = None  # Modelo local da Hugging Face
 usar_prompt_local = False  # Define se o prompt será processado localmente
-
+config_model = None  # Configuração carregada do arquivo JSON
 def carregar_configuracao():
     """
     Carrega as configurações de um arquivo JSON chamado 'config.json' no diretório atual.
@@ -103,26 +103,27 @@ def carregar_modelo_local():
 
 def enviar_prompt_para_local(prompt):
     """
-    Envia um prompt para um LLM local (Hugging Face) e retorna a resposta.
+    Envia um prompt para o modelo local DeepSeek-R1 e retorna a resposta.
     """
-    global local_model, tokenizer
+    global local_model, tokenizer, config_model
     try:
-        if(local_model is None):
-            
-            tokenizer = AutoTokenizer.from_pretrained(modelo)
-                
-            local_model = AutoModelForCausalLM.from_pretrained(modelo)
-                
-        messages=[{"role": "user", "content": prompt}]
-        formatted_prompt = tokenizer.apply_chat_template(messages, tokenize=False)
+        if local_model is None or tokenizer is None:
+            # Processa config_model para extrair argumentos
+            config_args = {}
+            if config_model:
+                for item in config_model.split(","):
+                    key, value = item.split("=")
+                    config_args[key.strip()] = eval(value.strip())  # Converte strings como "True" para booleanos
 
-        pipe = pipeline("text-generation", model= local_model, tokenizer = tokenizer, max_new_tokens=250,pad_token_id=tokenizer.eos_token_id)
-                #print(pipe(formatted_prompt)[0]["generated_text"])
-        raw_output = pipe(formatted_prompt)[0]["generated_text"]
-        #        result = extract_assistant_response(raw_output, local_prompt)
+            # Carrega o modelo e o tokenizer do DeepSeek-R1 com os argumentos processados
+            tokenizer = AutoTokenizer.from_pretrained(modelo, **config_args)
+            local_model = AutoModelForCausalLM.from_pretrained(modelo, **config_args)
+        messages = [{"role": "user", "content": prompt}]
+        # Usa o pipeline para geração de texto
+        pipe = pipeline("text-generation", model=local_model, tokenizer=tokenizer, max_new_tokens=250, device=-1)
+        response = pipe(messages)[0]["generated_text"]
 
-        return raw_output      
-        
+        return response
     except Exception as e:
         return f"Erro ao processar o prompt localmente: {e}"
     
@@ -298,7 +299,7 @@ def salvar_resultados_json(resultados, nome_arquivo):
         
         
 def main():
-    global api_key, modelo, uri, use_local_llm, usar_prompt_local  # Acessa as variáveis globais
+    global api_key, modelo, uri, use_local_llm, usar_prompt_local, config_model  # Acessa as variáveis globais
     # Carrega as configurações do arquivo JSON
     config = carregar_configuracao()
     if not config:
@@ -343,6 +344,7 @@ def main():
 
     if use_local_llm:
         modelo = config_provider.get("modelo")  # Modelo padrão para local
+        config_model = config_provider.get("config_model")  # Configuração do modelo local
     else:
         modelo = config_provider.get("modelo")  # Modelo padrão para API
         api_key = config_provider.get("api_key")
