@@ -107,6 +107,7 @@ def enviar_prompt_para_local(prompt):
     """
     global local_model, tokenizer, config_model
     try:
+        
         if local_model is None or tokenizer is None:
             # Processa config_model para extrair argumentos
             config_args = {}
@@ -119,9 +120,10 @@ def enviar_prompt_para_local(prompt):
             tokenizer = AutoTokenizer.from_pretrained(modelo, **config_args)
             local_model = AutoModelForCausalLM.from_pretrained(modelo, **config_args)
         messages = [{"role": "user", "content": prompt}]
+        formatted_prompt = tokenizer.apply_chat_template(messages, tokenize=False)
         # Usa o pipeline para geração de texto
-        pipe = pipeline("text-generation", model=local_model, tokenizer=tokenizer, max_new_tokens=250, device=-1)
-        response = pipe(messages)[0]["generated_text"]
+        pipe = pipeline("text-generation", model=local_model, tokenizer=tokenizer, max_new_tokens=250)
+        response = pipe(formatted_prompt)[0]["generated_text"]
 
         return response
     except Exception as e:
@@ -155,6 +157,23 @@ def gerar_dica(prompt):
     return enviar_prompt_para_llm(prompt_dica)
 
 
+def is_valid_json(texto):
+    """
+    Verifica se o texto fornecido é um JSON válido.
+    
+    Args:
+        texto (str): O texto a ser verificado.
+    
+    Returns:
+        bool: True se for um JSON válido, False caso contrário.
+    """
+    try:
+        json.loads(texto)
+        return True
+    except json.JSONDecodeError:
+        return False
+
+
 def extrair_security_incidents(texto):
     """
     Extrai 'Category' e 'Explanation' do texto fornecido.
@@ -167,8 +186,8 @@ def extrair_security_incidents(texto):
     Returns:
         dict: Um dicionário contendo os valores de 'Category' e 'Explanation'.
     """
-    # Tenta interpretar o texto como JSON
-    try:
+    # Verifica se o texto é um JSON válido
+    if is_valid_json(texto):
         dados = json.loads(texto)
         # Verifica se o JSON contém as chaves 'Category' e 'Explanation'
         if "Category" in dados and "Explanation" in dados:
@@ -176,11 +195,8 @@ def extrair_security_incidents(texto):
                 "Category": dados["Category"].strip(),
                 "Explanation": dados["Explanation"].strip()
             }
-    except json.JSONDecodeError:
-        # Caso o texto não seja um JSON válido, continua com o regex
-        pass
 
-    # Regex para capturar 'Category' e 'Explanation'
+    # Caso o texto não seja um JSON válido, continua com regex
     padrao = r"Category:\s*(.*?)\s*Explanation:\s*(.*?)(?=\n|$)"
     matches = re.findall(padrao, texto, re.DOTALL)
 
@@ -194,6 +210,7 @@ def extrair_security_incidents(texto):
     else:
         return {"Category": "UNKNOWN", "Explanation": "UNKNOWN"}
 
+        
 def progressive_hints(prompt, row, colunas, max_hints=4, limite_rouge=0.9):
     """
     Implementa a funcionalidade de progressive hints.
@@ -230,7 +247,7 @@ def progressive_hints(prompt, row, colunas, max_hints=4, limite_rouge=0.9):
         nova_resposta = enviar_prompt_para_llm(prompt)
 
         # Calcula o ROUGE Score entre a resposta anterior e a nova resposta
-        rouge_score = calcular_rouge_score(resposta_anterior, nova_resposta)
+        rouge_score = calcular_rouge_score(resposta_anterior,nova_resposta)
         
        
 

@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream:requirements.txt
 openpyxl
 torch
 rouge_score
@@ -5,3 +6,5 @@ transformers
 openai
 pandas
 argparse
+=======
+>>>>>>> Stashed changes:requeriments.txt
