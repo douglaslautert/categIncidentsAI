@@ -314,7 +314,30 @@ def salvar_resultados_json(resultados, nome_arquivo):
     except Exception as e:
         print(f"Erro ao salvar os resultados no arquivo JSON: {e}")
         
-        
+def salvar_resultados_xlsx(resultados, nome_arquivo):
+    """
+    Salva os resultados em um arquivo XLSX usando pandas.
+    """
+    try:
+        # Cria o diretório se não existir
+        diretorio = os.path.dirname(nome_arquivo)
+        if diretorio:  # Verifica se há um diretório no caminho
+            os.makedirs(diretorio, exist_ok=True)
+
+        # Verifica se há resultados para salvar
+        if not resultados:
+            print("Nenhum resultado para salvar no arquivo XLSX.")
+            return
+
+        # Converte a lista de dicionários em um DataFrame
+        df = pd.DataFrame(resultados)
+
+        # Salva o DataFrame em um arquivo XLSX
+        df.to_excel(nome_arquivo, index=False, engine='openpyxl')
+        print(f"Resultados salvos com sucesso no arquivo '{nome_arquivo}'.")
+    except Exception as e:
+        print(f"Erro ao salvar os resultados no arquivo XLSX: {e}")
+                
 def main():
     global api_key, modelo, uri, use_local_llm, usar_prompt_local, config_model  # Acessa as variáveis globais
     # Carrega as configurações do arquivo JSON
@@ -330,7 +353,7 @@ def main():
     parser.add_argument('diretorio', type=str, help="Caminho do diretório contendo arquivos CSV")
     parser.add_argument('--colunas', nargs='+', required=True, help="Nomes das colunas a serem usadas como prompt")
     parser.add_argument('--limite_rouge', type=float, default=0.9, help="Limite do ROUGE Score para interromper o loop de dicas (padrão: 0.9)")
-    parser.add_argument('--formato', type=str, choices=['csv', 'json'], default='csv', help="Formato de saída dos resultados (csv ou json). Padrão: csv")
+    parser.add_argument('--formato', type=str, choices=['csv', 'json','xlsx'], default='csv', help="Formato de saída dos resultados (csv ou json). Padrão: csv")
     parser.add_argument('--provider', nargs='+', required=True, help="Definir o provider a ser utilizado (local ou api)")
     parser.add_argument('--limite_hint', type=int, default=0, help="Número máximo de dicas progressivas (padrão: 0)")
     parser.add_argument('--nist', dest='nist', action='store_true', help="Ativar categorizador conforme padrão NIST (padrão: True)")
@@ -460,6 +483,8 @@ def main():
         salvar_resultados_csv(resultados, nome_arquivo)
     elif args.formato == 'json':
         salvar_resultados_json(resultados, nome_arquivo)
+    elif args.formato == 'xlsx':
+        salvar_resultados_xlsx(resultados, nome_arquivo)
 
 
 if __name__ == "__main__":
